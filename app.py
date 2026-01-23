@@ -4,140 +4,141 @@ import numpy as np
 import plotly.graph_objects as go
 
 # --- 1. PAGE CONFIGURATION ---
-st.set_page_config(page_title="Data Bridge Engine | HQ Strategic Planner", layout="wide")
+st.set_page_config(page_title="Data Bridge Engine", layout="wide")
 
-# CSS: Wymuszenie stałej widoczności tekstów w sidebarze i wysokiego kontrastu
+# CSS: Custom Clean Design
 st.markdown("""
     <style>
     /* Main Background */
-    .stApp { background-color: #0b0f19; color: #e0e0e0; }
+    .stApp { background-color: #05080d; color: #ffffff; }
     
-    /* SIDEBAR FIX: Stała widoczność tekstów */
-    section[data-testid="stSidebar"] { 
-        background-color: #161b26; 
-        border-right: 1px solid #2d3748; 
+    /* SIDEBAR CLEANUP */
+    [data-testid="stSidebar"] {
+        background-color: #0f141c;
+        border-right: 1px solid #1e2633;
+        min-width: 320px !important;
     }
     
-    /* Wymuszenie koloru dla wszystkich tekstów w sidebarze */
-    section[data-testid="stSidebar"] .stMarkdown p, 
-    section[data-testid="stSidebar"] label, 
-    section[data-testid="stSidebar"] span { 
-        color: #ffffff !important; 
-        opacity: 1 !important;
-        font-weight: 600 !important;
+    /* Sidebar Labels & Text */
+    [data-testid="stSidebar"] .stMarkdown p, 
+    [data-testid="stSidebar"] label {
+        color: #ffffff !important;
+        font-size: 1.05rem !important;
+        font-weight: 500 !important;
+        margin-bottom: 5px !important;
     }
 
-    /* Nagłówki Brandingowe */
-    .project-header { color: #00aeef; font-size: 1rem; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
-    .engine-header { color: #ffffff; font-size: 2.5rem; font-weight: 800; margin-top: -10px; }
+    /* Styling Headers */
+    .section-header {
+        color: #00aeef;
+        font-size: 0.85rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-top: 25px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #1e2633;
+        padding-bottom: 5px;
+    }
 
-    /* KPI Metric Cards */
+    /* Metric Cards */
     div[data-testid="stMetric"] {
-        background-color: #1c2331; 
-        border: 1px solid #3b445c; 
+        background-color: #161c26; 
+        border: 1px solid #232d3d; 
         padding: 20px; 
-        border-radius: 10px;
+        border-radius: 8px;
     }
-    div[data-testid="stMetricLabel"] > div { color: #ffffff !important; font-size: 1.1rem !important; }
-    div[data-testid="stMetricValue"] > div { color: #00aeef !important; font-size: 2.2rem !important; font-weight: 800 !important; }
+    div[data-testid="stMetricValue"] > div { color: #00aeef !important; font-weight: 800 !important; }
 
-    /* Fix dla linków i tekstu głównego */
-    .stMarkdown, p, span { color: #ffffff !important; }
+    /* Buttons & Sliders Color */
+    .stSlider > div [data-baseweb="slider"] { color: #00aeef; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SIDEBAR (STABILNY I CZYTELNY) ---
+# --- 2. SIDEBAR (REDESIGNED) ---
 with st.sidebar:
-    st.markdown('<p style="color: #00aeef; font-weight: 900; font-size: 1.2rem; margin-bottom: 0;">DATA BRIDGE ENGINE</p>', unsafe_allow_html=True)
-    st.markdown('<p style="font-size: 1.5rem; font-weight: 800; margin-top: 0; color: #ffffff;">Strategic Planner</p>', unsafe_allow_html=True)
+    # Top Branding
+    st.markdown('<p style="color: #00aeef; font-weight: 900; font-size: 1.6rem; margin-bottom: -5px;">DATA BRIDGE</p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size: 1rem; color: #ffffff; opacity: 0.8;">STRATEGIC ENGINE v2.8</p>', unsafe_allow_html=True)
     
-    st.divider()
-    
-    # Month Selection
-    selected_month = st.select_slider("Analysis Month", 
+    # Section 1: Timeframe
+    st.markdown('<div class="section-header">ENVIRONMENT</div>', unsafe_allow_html=True)
+    selected_month = st.select_slider("Forecast Month", 
                              options=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
                              value="Jan")
     
-    st.divider()
-    st.markdown("### Generation Mix (GW)")
-    s_hydro = st.slider("Hydro Assets", 30.0, 55.0, 37.0)
-    s_wind = st.slider("Wind Power", 0.0, 30.0, 5.0)
-    s_pv = st.slider("Solar PV", 0.0, 20.0, 2.0)
+    # Section 2: Capacity
+    st.markdown('<div class="section-header">GENERATION MIX (GW)</div>', unsafe_allow_html=True)
+    s_hydro = st.slider("Hydro Power", 30, 60, 37)
+    s_wind = st.slider("Wind Power", 0, 40, 5)
+    s_pv = st.slider("Solar PV", 0, 25, 2)
     
-    st.divider()
-    st.markdown("### Grid Infrastructure")
-    s_inter_cap = st.slider("Interconnection Cap (GW)", 0.0, 10.0, 2.5)
+    # Section 3: Infrastructure
+    st.markdown('<div class="section-header">INFRASTRUCTURE</div>', unsafe_allow_html=True)
+    s_inter_cap = st.slider("Interconnectors (GW)", 0.0, 15.0, 2.5)
 
-# --- 3. CORE LOGIC (TIME & WEATHER) ---
+# --- 3. LOGIC (STABLE CALCULATIONS) ---
 def get_weather_factors(month):
     m_list = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     idx = m_list.index(month)
-    return [0.15, 0.3, 0.6, 0.8, 0.95, 1.0, 0.98, 0.85, 0.65, 0.4, 0.2, 0.1][idx], \
-           [1.0, 0.95, 0.85, 0.7, 0.5, 0.4, 0.45, 0.5, 0.65, 0.8, 0.9, 0.98][idx], \
+    return [0.1, 0.25, 0.5, 0.8, 0.95, 1.0, 0.95, 0.8, 0.6, 0.35, 0.15, 0.05][idx], \
+           [1.0, 0.9, 0.8, 0.65, 0.45, 0.35, 0.4, 0.45, 0.6, 0.8, 0.9, 0.95][idx], \
            [1.0, 0.9, 0.75, 0.6, 0.55, 0.5, 0.55, 0.52, 0.58, 0.7, 0.85, 0.95][idx]
 
 pv_f, wind_f, dem_f = get_weather_factors(selected_month)
 days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 time_axis = [f"{d} {h:02d}:00" for d in days for h in range(24)]
 
-demand = (26 + 11 * np.sin(np.linspace(0, 14 * np.pi, 168)) + 4 * np.cos(np.linspace(0, 7 * np.pi, 168))) * dem_f
-demand[120:] *= 0.88 # Weekend reduction
+# Generation Profiles
+demand = (28 + 10 * np.sin(np.linspace(0, 14 * np.pi, 168))) * dem_f
+demand[120:] *= 0.85 # Weekend drop
 g_pv = s_pv * np.maximum(0, np.sin(np.linspace(-np.pi/2, 13.5 * np.pi, 168))) * pv_f
 g_w = s_wind * (0.6 + 0.3 * np.cos(np.linspace(0, 10 * np.pi, 168))) * wind_f
-g_h = np.clip(demand - (g_pv + g_w), s_hydro * 0.35, s_hydro)
+g_h = np.clip(demand - (g_pv + g_w), s_hydro * 0.4, s_hydro)
 
 export = np.minimum(np.maximum(0, (g_h + g_pv + g_w) - demand), s_inter_cap)
 shortage = np.maximum(0, demand - (g_h + g_pv + g_w))
 
-# --- 4. MAIN UI ---
-st.markdown('<p class="project-header">Strategic Evolution: Hydro-Québec 2050</p>', unsafe_allow_html=True)
-st.markdown('<p class="engine-header">Data Bridge Engine</p>', unsafe_allow_html=True)
+# --- 4. MAIN DASHBOARD ---
+st.markdown('<p style="color: #00aeef; font-weight: bold; margin-bottom: -10px;">HQ EVOLUTION 2050</p>', unsafe_allow_html=True)
+st.title("Strategic Generation Mix Analysis")
 
-# Metrics
+# KPI Summary
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Avg Demand", f"{demand.mean():.1f} GW")
-k2.metric("VRE Efficiency", f"{((g_w.mean()+g_pv.mean())/(s_wind+s_pv+0.1)*100):.1f}%")
-k3.metric("Peak Shortage", f"{shortage.max():.2f} GW")
-k4.metric("Weekly Export (Est.)", f"{(export.sum()*85/1000):,.0f} k$")
+k2.metric("VRE Yield", f"{((g_w.mean()+g_pv.mean())/(s_wind+s_pv+0.1)*100):.1f}%")
+k3.metric("Peak Deficit", f"{shortage.max():.2f} GW")
+k4.metric("Est. Revenue", f"{(export.sum()*85/1000):,.0f} k$")
 
-# --- 5. MAIN CHART ---
+# --- 5. MAIN VISUALIZATION ---
 
 fig = go.Figure()
-fig.add_trace(go.Scatter(x=time_axis, y=demand, name="Total Demand", line=dict(color='#ffffff', width=4, dash='dot')))
-fig.add_trace(go.Scatter(x=time_axis, y=g_h, name="Hydro", stackgroup='one', fillcolor='#00aeef', line=dict(width=0)))
-fig.add_trace(go.Scatter(x=time_axis, y=g_w, name="Wind", stackgroup='one', fillcolor='#39b54a', line=dict(width=0)))
+fig.add_trace(go.Scatter(x=time_axis, y=demand, name="System Demand", line=dict(color='#ffffff', width=3, dash='dot')))
+fig.add_trace(go.Scatter(x=time_axis, y=g_h, name="Hydro Base", stackgroup='one', fillcolor='#00aeef', line=dict(width=0)))
+fig.add_trace(go.Scatter(x=time_axis, y=g_w, name="Wind Assets", stackgroup='one', fillcolor='#39b54a', line=dict(width=0)))
 fig.add_trace(go.Scatter(x=time_axis, y=g_pv, name="Solar PV", stackgroup='one', fillcolor='#ffc20e', line=dict(width=0)))
 
 fig.update_layout(
-    template="plotly_dark", height=580, 
+    template="plotly_dark", height=500, margin=dict(t=30, b=10),
     paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=14, color="#ffffff")),
-    xaxis=dict(gridcolor='#2d3748', tickfont=dict(color='#ffffff', size=12), tickmode='array', tickvals=time_axis[::24], ticktext=days),
-    yaxis=dict(gridcolor='#2d3748', tickfont=dict(color='#ffffff', size=12), title="Power [GW]")
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=12)),
+    xaxis=dict(tickmode='array', tickvals=time_axis[::24], ticktext=days, gridcolor='#1e2633'),
+    yaxis=dict(gridcolor='#1e2633', title="Power Output [GW]")
 )
 st.plotly_chart(fig, use_container_width=True)
 
-# --- 6. ANALYTICS ---
-st.divider()
-cl, cr = st.columns(2)
+# --- 6. EXPORT & INSIGHTS ---
+col_left, col_right = st.columns([1, 1.5])
+with col_left:
+    st.markdown('<div style="background-color: #161c26; padding: 20px; border-radius: 8px; border-left: 5px solid #00aeef;">'
+                f'<b>Current Scenario: {selected_month}</b><br>'
+                f'The system is currently <b>{"STABLE" if shortage.max() == 0 else "AT RISK"}</b>. '
+                f'Interconnector utilization stands at <b>{export.mean()/s_inter_cap*100:.1f}%</b>.'
+                '</div>', unsafe_allow_html=True)
 
-with cl:
-    st.subheader("Seasonal Insights")
-    if selected_month in ["Dec", "Jan", "Feb"]: st.error("❄️ **WINTER:** Extreme heating peaks. High wind yields.")
-    elif selected_month in ["Mar", "Apr", "May"]: st.warning("🌊 **SPRING:** Freshet period. High hydro-inflow.")
-    elif selected_month in ["Jun", "Jul", "Aug"]: st.success("☀️ **SUMMER:** Optimal Solar output. Low demand.")
-    else: st.info("🍂 **AUTUMN:** Transition season. Rising evening peaks.")
-
-with cr:
-    st.subheader("Export Dispatch (GW)")
+with col_right:
     
-    fig_e = go.Figure(go.Bar(x=time_axis, y=export, name="Export", marker_color='#10b981'))
-    fig_e.update_layout(
-        template="plotly_dark", height=250, margin=dict(t=10, b=10), paper_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(tickmode='array', tickvals=time_axis[::24], ticktext=days, tickfont=dict(color='#ffffff')),
-        yaxis=dict(tickfont=dict(color='#ffffff'))
-    )
+    fig_e = go.Figure(go.Bar(x=time_axis, y=export, name="Export dispatched", marker_color='#10b981'))
+    fig_e.update_layout(template="plotly_dark", height=200, margin=dict(t=0, b=0), paper_bgcolor='rgba(0,0,0,0)',
+                        xaxis=dict(tickmode='array', tickvals=time_axis[::24], ticktext=days))
     st.plotly_chart(fig_e, use_container_width=True)
-
-st.divider()
-st.caption("Data Bridge Engine v2.7 | Hydro-Québec Deployment")
